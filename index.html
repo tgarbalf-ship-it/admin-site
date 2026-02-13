@@ -14,6 +14,7 @@ button:hover{background:#00cc77;}
 .application{background:#222;padding:10px;margin:10px 0;border-radius:8px;text-align:right;}
 .accept{background:green;margin-top:5px;}
 .reject{background:red;margin-top:5px;}
+.deleteBtn{background:#ff5500;margin-top:5px;}
 .status{margin-top:5px;font-weight:bold;}
 .adminPanel{display:none;margin-top:20px;}
 </style>
@@ -30,7 +31,9 @@ button:hover{background:#00cc77;}
 <button onclick="submitApp()">إرسال التقديم</button>
 <!-- الأزرار ثابتة مرة واحدة -->
 <button onclick="showLogin()">دخول الإدارة</button>
-<button onclick="checkStatusUser()">تحقق من حالتي</button>
+<h3>تحقق من حالتك</h3>
+<input type="text" id="checkName" placeholder="اكتب اسمك فقط">
+<button onclick="checkStatusUser()">تحقق</button>
 <div id="userStatus"></div>
 </div>
 
@@ -52,6 +55,7 @@ const adminPass="RUN";
 function loadData(){return JSON.parse(localStorage.getItem("applications")||"[]");}
 function saveData(data){localStorage.setItem("applications",JSON.stringify(data));}
 
+// إرسال طلب
 function submitApp(){
 let name=document.getElementById("name").value.trim();
 let age=document.getElementById("age").value.trim();
@@ -67,8 +71,9 @@ document.getElementById("age").value="";
 document.getElementById("reason").value="";
 }
 
+// تحقق من الحالة بالاسم فقط
 function checkStatusUser(){
-let name=document.getElementById("name").value.trim();
+let name=document.getElementById("checkName").value.trim();
 let div=document.getElementById("userStatus");
 if(!name){div.innerHTML="اكتب اسمك أولاً"; return;}
 let data=loadData();
@@ -102,17 +107,22 @@ div.innerHTML=`<b>الاسم:</b> ${app.name}<br>
 <b>العمر:</b> ${app.age}<br>
 <b>السبب:</b> ${app.reason}<br>
 <div class="status">الحالة: ${app.status}</div>`;
+let btnDiv=document.createElement("div");
+
+// أزرار القبول / الرفض فقط إذا قيد المراجعة
 if(app.status==="قيد المراجعة"){
 let acceptBtn=document.createElement("button"); acceptBtn.className="accept"; acceptBtn.textContent="قبول";
 acceptBtn.onclick=()=>updateStatus(app.id,"مقبول");
 let rejectBtn=document.createElement("button"); rejectBtn.className="reject"; rejectBtn.textContent="رفض";
 rejectBtn.onclick=()=>updateStatus(app.id,"مرفوض");
-div.appendChild(acceptBtn); div.appendChild(rejectBtn);
-}else if(app.status==="مقبول"){
-let link=document.createElement("a");
-link.href=discordLink; link.target="_blank"; link.style.color="#00ff99"; link.style.fontWeight="bold"; link.innerText="دخول السيرفر";
-div.appendChild(link);
+btnDiv.appendChild(acceptBtn); btnDiv.appendChild(rejectBtn);
+}else{
+let deleteBtn=document.createElement("button"); deleteBtn.className="deleteBtn"; deleteBtn.textContent="حذف";
+deleteBtn.onclick=()=>deleteApp(app.id);
+btnDiv.appendChild(deleteBtn);
 }
+
+div.appendChild(btnDiv);
 container.appendChild(div);
 });
 }
@@ -121,6 +131,13 @@ function updateStatus(id,status){
 let data=loadData();
 let app=data.find(d=>d.id===id);
 if(app) app.status=status;
+saveData(data);
+showApplications();
+}
+
+function deleteApp(id){
+let data=loadData();
+data=data.filter(d=>d.id!==id);
 saveData(data);
 showApplications();
 }
