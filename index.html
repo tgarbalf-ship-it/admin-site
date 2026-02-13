@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>تقديم إدارة</title>
+
+<style>
+body{
+background:#0f0f0f;
+color:white;
+font-family:Arial;
+text-align:center;
+margin:0;
+padding:0;
+}
+
+.container{
+max-width:400px;
+margin:30px auto;
+background:#1c1c1c;
+padding:20px;
+border-radius:15px;
+box-shadow:0 0 20px #00ff99;
+}
+
+h2{
+margin-bottom:15px;
+}
+
+input,textarea{
+width:100%;
+padding:10px;
+margin:6px 0;
+border:none;
+border-radius:8px;
+}
+
+button{
+background:#00ff99;
+border:none;
+padding:10px;
+width:100%;
+border-radius:8px;
+cursor:pointer;
+font-weight:bold;
+margin-top:8px;
+}
+
+button:hover{
+background:#00cc77;
+}
+
+.adminPanel{
+display:none;
+margin-top:20px;
+}
+
+.application{
+background:#222;
+padding:10px;
+margin:10px 0;
+border-radius:8px;
+text-align:right;
+}
+
+.deleteBtn{
+background:red;
+margin-top:5px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<h2>تقديم إدارة ديسكورد</h2>
+
+<div id="applySection">
+<input type="text" id="name" placeholder="اسمك في ديسكورد" required>
+<input type="number" id="age" placeholder="عمرك" required>
+<textarea id="reason" placeholder="ليش تبي إدارة؟" required></textarea>
+<button onclick="submitApp()">إرسال التقديم</button>
+<button onclick="showLogin()">دخول الإدارة</button>
+</div>
+
+<div id="loginSection" style="display:none;">
+<input type="password" id="adminPass" placeholder="كلمة سر الإدارة">
+<button onclick="checkPass()">دخول</button>
+</div>
+
+<div class="adminPanel" id="adminPanel">
+<h3>لوحة التقديمات</h3>
+<div id="applications"></div>
+<button onclick="logout()">تسجيل خروج</button>
+</div>
+
+</div>
+
+<script>
+let password = "1234"; // 🔐 غير كلمة السر هنا
+
+function submitApp(){
+let name = document.getElementById("name").value;
+let age = document.getElementById("age").value;
+let reason = document.getElementById("reason").value;
+
+if(!name || !age || !reason){
+alert("اكمل البيانات");
+return;
+}
+
+let apps = JSON.parse(localStorage.getItem("applications") || "[]");
+
+apps.push({name, age, reason});
+localStorage.setItem("applications", JSON.stringify(apps));
+
+alert("تم إرسال التقديم بنجاح");
+document.getElementById("name").value="";
+document.getElementById("age").value="";
+document.getElementById("reason").value="";
+}
+
+function showLogin(){
+document.getElementById("loginSection").style.display="block";
+}
+
+function checkPass(){
+let pass = document.getElementById("adminPass").value;
+
+if(pass === password){
+document.getElementById("adminPanel").style.display="block";
+document.getElementById("applySection").style.display="none";
+document.getElementById("loginSection").style.display="none";
+loadApps();
+}else{
+alert("كلمة السر غلط");
+}
+}
+
+function loadApps(){
+let apps = JSON.parse(localStorage.getItem("applications") || "[]");
+let container = document.getElementById("applications");
+container.innerHTML="";
+
+apps.forEach((app, index)=>{
+container.innerHTML += `
+<div class="application">
+<b>الاسم:</b> ${app.name}<br>
+<b>العمر:</b> ${app.age}<br>
+<b>السبب:</b> ${app.reason}<br>
+<button class="deleteBtn" onclick="deleteApp(${index})">حذف</button>
+</div>
+`;
+});
+}
+
+function deleteApp(index){
+let apps = JSON.parse(localStorage.getItem("applications") || "[]");
+apps.splice(index,1);
+localStorage.setItem("applications", JSON.stringify(apps));
+loadApps();
+}
+
+function logout(){
+location.reload();
+}
+</script>
+
+</body>
+</html>
