@@ -6,9 +6,9 @@
 <title>تقديم إدارة ديسكورد</title>
 <style>
 body{background:#0f0f0f;color:white;font-family:Arial;text-align:center;margin:0;padding:0;}
-.container{max-width:450px;margin:30px auto;background:#1c1c1c;padding:20px;border-radius:20px;box-shadow:0 0 25px #00ff99;}
-h2{margin-bottom:15px;text-shadow:0 0 10px #00ff99;}
-input,textarea{width:100%;padding:12px;margin:6px 0;border:none;border-radius:10px;background:#222;color:white;}
+.container{max-width:500px;margin:30px auto;background:#1c1c1c;padding:20px;border-radius:20px;box-shadow:0 0 25px #00ff99;}
+h2,h3{margin-bottom:15px;text-shadow:0 0 10px #00ff99;}
+input,textarea,select{width:100%;padding:12px;margin:6px 0;border:none;border-radius:10px;background:#222;color:white;}
 button{background:#00ff99;border:none;padding:12px;width:100%;border-radius:10px;margin-top:6px;cursor:pointer;font-weight:bold;box-shadow:0 0 10px #00ff99;}
 button:hover{background:#00cc77;box-shadow:0 0 15px #00ff77;}
 .application{background:#222;padding:10px;margin:10px 0;border-radius:10px;text-align:right;box-shadow:0 0 8px #00ff99;}
@@ -17,15 +17,22 @@ button:hover{background:#00cc77;box-shadow:0 0 15px #00ff77;}
 .success{background:#003300;padding:10px;border-radius:10px;margin-top:10px;box-shadow:0 0 10px #00ff99;}
 .pending{animation:blink 1s infinite;}
 @keyframes blink{0%{opacity:1;}50%{opacity:0.4;}100%{opacity:1;}}
+.topButton{background:#00ff99;border:none;padding:10px;margin:6px 0;border-radius:8px;cursor:pointer;box-shadow:0 0 8px #00ff99;}
+.topButton:hover{background:#00cc77;}
+.backBtn{position:fixed;top:10px;left:10px;padding:10px;border-radius:8px;background:#00ff99;cursor:pointer;z-index:1000;box-shadow:0 0 8px #00ff99;}
+.backBtn:hover{background:#00cc77;}
 </style>
 </head>
 <body>
-<div class="container">
+<div class="container" id="mainContainer">
 <h2>تقديم إدارة</h2>
 
 <div id="applySection">
 <input type="text" id="name" placeholder="اسمك في ديسكورد">
+<input type="text" id="age" placeholder="عمرك">
 <textarea id="reason" placeholder="ليش تبي إدارة؟"></textarea>
+<textarea id="experience" placeholder="خبرتك السابقة"></textarea>
+<textarea id="handling" placeholder="كيف تتصرف مع المشاكل؟"></textarea>
 <button onclick="submitApp()">إرسال</button>
 <button onclick="checkStatus()">تحقق من حالتي</button>
 <button onclick="adminLogin()">لوحة الإدارة</button>
@@ -33,8 +40,116 @@ button:hover{background:#00cc77;box-shadow:0 0 15px #00ff77;}
 
 <div id="status"></div>
 <div id="adminPanel" style="display:none;"></div>
+<div id="recordsPanel" style="display:none;"></div>
 </div>
 
+<script>
+let adminPass="RUN";
+let discordLink="https://discord.gg/kdy3fkbKX9";
+let applications=JSON.parse(localStorage.getItem("applications")||"{}");
+let accepted=[]; 
+let rejected=[];
+
+// إرسال التقديم
+function submitApp(){
+let name=document.getElementById("name").value.trim();
+let age=document.getElementById("age").value.trim();
+let reason=document.getElementById("reason").value.trim();
+let experience=document.getElementById("experience").value.trim();
+let handling=document.getElementById("handling").value.trim();
+if(!name||!age||!reason||!experience||!handling){alert("اكمل كل البيانات");return;}
+if(applications[name]){alert("انت قدمت من قبل");return;}
+applications[name]={age,reason,experience,handling,status:"pending",time:Date.now()};
+localStorage.setItem("applications",JSON.stringify(applications));
+alert("تم إرسال طلبك");
+}
+
+// التحقق من حالة الطلب
+function checkStatus(){
+let name=document.getElementById("name").value.trim();
+if(!name){alert("اكتب اسمك");return;}
+let statusDiv=document.getElementById("status");
+if(!applications[name]){statusDiv.innerHTML="لا يوجد طلب بهذا الاسم";return;}
+let app=applications[name];
+if(app.status==="accepted"){
+statusDiv.innerHTML=`<div class="success">🎉 تم قبولك!<br>اضغط للدخول:<br><a href="${discordLink}" target="_blank" style="color:#00ff99;">دخول السيرفر</a></div>`;
+}else if(app.status==="rejected"){
+statusDiv.innerHTML="❌ تم رفض طلبك";
+}else{
+let seconds=Math.floor((Date.now()-app.time)/1000);
+statusDiv.innerHTML=`<div class="pending">⏳ طلبك قيد المراجعة منذ ${seconds} ثانية</div>`;
+}
+}
+
+// تسجيل دخول الإدارة
+function adminLogin(){
+let pass=prompt("ادخل كلمة سر الإدارة");
+if(pass!==adminPass){alert("كلمة السر غلط");return;}
+document.getElementById("applySection").style.display="none";
+document.getElementById("adminPanel").style.display="block";
+loadApps();
+}
+
+// تحميل الطلبات للوحة الإدارة
+function loadApps(){
+let panel=document.getElementById("adminPanel");
+panel.innerHTML="<h3>لوحة الإدارة</h3>";
+panel.innerHTML+='<button class="topButton" onclick="showRecords()">المقبولون/المرفوضون</button>';
+for(let key in applications){
+let app=applications[key];
+if(app.status==="pending"){
+panel.innerHTML+=`<div class="application" id="app-${key}"><b>${key}</b><br>العمر: ${app.age}<br>${app.reason}<br>${app.experience}<br>${app.handling}<br>
+<button class="accept" onclick="updateStatus('${key}','accepted')">قبول</button>
+<button class="reject" onclick="updateStatus('${key}','rejected')">رفض</button></div>`;
+}
+}
+}
+
+// تحديث حالة الطلب وإخفاؤه
+function updateStatus(name,status){
+applications[name].status=status;
+applications[name].time=Date.now();
+localStorage.setItem("applications",JSON.stringify(applications));
+let elem=document.getElementById("app-"+name);
+if(elem)elem.style.display="none";
+accepted.push(status==="accepted"?name:null);
+rejected.push(status==="rejected"?name:null);
+}
+
+// عرض المقبولين/المرفوضين
+function showRecords(){
+document.getElementById("adminPanel").style.display="none";
+let panel=document.getElementById("recordsPanel");
+panel.style.display="block";
+panel.innerHTML='<div class="backBtn" onclick="backToAdmin()">رجوع</div><h3>المقبولون والمرفوضون</h3>';
+for(let key in applications){
+let app=applications[key];
+if(app.status!=="pending"){
+panel.innerHTML+=`<div class="application" id="record-${key}"><b>${key}</b><br>العمر: ${app.age}<br>${app.reason}<br>${app.experience}<br>${app.handling}<br>الحالة: ${app.status}<br>
+<button onclick="revertStatus('${key}')">تراجع</button></div>`;
+}
+}
+}
+
+// تراجع الطلب
+function revertStatus(name){
+applications[name].status="pending";
+applications[name].time=Date.now();
+localStorage.setItem("applications",JSON.stringify(applications));
+document.getElementById("recordsPanel").style.display="none";
+document.getElementById("adminPanel").style.display="block";
+loadApps();
+}
+
+// زر رجوع عام
+function backToAdmin(){
+document.getElementById("recordsPanel").style.display="none";
+document.getElementById("adminPanel").style.display="block";
+loadApps();
+}
+</script>
+</body>
+</html>
 <script>
 let adminPass="1234"; // كلمة سر الإدارة
 let discordLink="https://discord.gg/kdy3fkbKX9";
