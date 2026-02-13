@@ -43,6 +43,127 @@ button:hover{background:#00cc77;box-shadow:0 0 15px #00ff77;}
 <div id="recordsPanel" style="display:none;"></div>
 </div>
 
+<script>
+const discordLink = "https://discord.gg/kdy3fkbKX9";
+const adminPass = "RUN";
+
+// تحميل البيانات من LocalStorage
+function loadData(){
+  let data = localStorage.getItem('طلبات');
+  if(!data) return [];
+  return JSON.parse(data);
+}
+
+// حفظ البيانات في LocalStorage
+function saveData(data){
+  localStorage.setItem('طلبات', JSON.stringify(data));
+}
+
+// إرسال الطلب
+function submitApp(){
+  let name = document.getElementById("name").value.trim();
+  let age = document.getElementById("age").value.trim();
+  let reason = document.getElementById("reason").value.trim();
+  let experience = document.getElementById("experience").value.trim();
+  let handling = document.getElementById("handling").value.trim();
+  if(!name||!age||!reason||!experience||!handling){alert("اكمل كل البيانات");return;}
+
+  let data = loadData();
+  if(data.find(d=>d.الاسم===name)){alert("انت قدمت من قبل");return;}
+
+  let newApp = {
+    id: Date.now(),
+    الاسم: name,
+    العمر: age,
+    سبب_التقديم: reason,
+    الخبرة: experience,
+    التعامل: handling,
+    الحالة: "قيد المراجعة"
+  };
+  data.push(newApp);
+  saveData(data);
+  alert("تم إرسال طلبك");
+}
+
+// التحقق من حالة الطلب
+function checkStatus(){
+  let name = document.getElementById("name").value.trim();
+  if(!name){alert("اكتب اسمك");return;}
+  let data = loadData();
+  let app = data.find(d=>d.الاسم===name);
+  let statusDiv = document.getElementById("status");
+  if(!app){statusDiv.innerHTML="لا يوجد طلب بهذا الاسم"; return;}
+  if(app.الحالة==="مقبول"){
+    statusDiv.innerHTML=`<div class="success">🎉 تم قبولك!<br>اضغط للدخول:<br><a href="${discordLink}" target="_blank" style="color:#00ff99;">دخول السيرفر</a></div>`;
+  }else if(app.الحالة==="مرفوض"){
+    statusDiv.innerHTML="❌ تم رفض طلبك";
+  }else{
+    statusDiv.innerHTML=`<div class="pending">⏳ طلبك قيد المراجعة</div>`;
+  }
+}
+
+// تسجيل دخول الإدارة
+function adminLogin(){
+  let pass = prompt("ادخل كلمة سر الإدارة");
+  if(pass!==adminPass){alert("كلمة السر غلط");return;}
+  document.getElementById("applySection").style.display="none";
+  document.getElementById("adminPanel").style.display="block";
+  loadApps();
+}
+
+// تحميل الطلبات للوحة الإدارة
+function loadApps(){
+  let panel=document.getElementById("adminPanel");
+  panel.innerHTML="<h3>لوحة الإدارة</h3><button class='topButton' onclick='showRecords()'>المقبولون/المرفوضون</button>";
+  let data = loadData();
+  let pending = data.filter(d=>d.الحالة==="قيد المراجعة");
+  pending.forEach(app=>{
+    panel.innerHTML+=`<div class="application" id="app-${app.id}"><b>${app.الاسم}</b><br>العمر: ${app.العمر}<br>${app.سبب_التقديم}<br>${app.الخبرة}<br>${app.التعامل}<br>
+    <button class="accept" onclick="updateStatus(${app.id},'مقبول')">قبول</button>
+    <button class="reject" onclick="updateStatus(${app.id},'مرفوض')">رفض</button></div>`;
+  });
+}
+
+// تحديث حالة الطلب
+function updateStatus(id,status){
+  let data = loadData();
+  let app = data.find(d=>d.id===id);
+  if(app) app.الحالة = status;
+  saveData(data);
+  loadApps();
+  showRecords();
+}
+
+// عرض المقبولين والمرفوضين
+function showRecords(){
+  document.getElementById("adminPanel").style.display="none";
+  let panel=document.getElementById("recordsPanel");
+  panel.style.display="block";
+  panel.innerHTML='<div class="backBtn" onclick="backToAdmin()">رجوع</div><h3>المقبولون والمرفوضون</h3>';
+  let data = loadData();
+  let others = data.filter(d=>d.الحالة!=="قيد المراجعة");
+  others.forEach(app=>{
+    panel.innerHTML+=`<div class="application" id="record-${app.id}"><b>${app.الاسم}</b><br>العمر: ${app.العمر}<br>${app.سبب_التقديم}<br>${app.الخبرة}<br>${app.التعامل}<br>الحالة: ${app.الحالة}<br>
+    <button class="accept" onclick="updateStatus(${app.id},'مقبول')">قبول</button>
+    <button class="reject" onclick="updateStatus(${app.id},'مرفوض')">رفض</button></div>`;
+  });
+}
+
+function backToAdmin(){
+  document.getElementById("recordsPanel").style.display="none";
+  document.getElementById("adminPanel").style.display="block";
+}
+</script>
+</body>
+</html><button onclick="checkStatus()">تحقق من حالتي</button>
+<button onclick="adminLogin()">لوحة الإدارة</button>
+</div>
+
+<div id="status"></div>
+<div id="adminPanel" style="display:none;"></div>
+<div id="recordsPanel" style="display:none;"></div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // إعداد Supabase
