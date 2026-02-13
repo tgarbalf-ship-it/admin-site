@@ -246,6 +246,124 @@ async function loadApps(){
 // تحديث حالة الطلب
 async function updateStatus(id,status){
   await supabase.from('طلبات').update({الحالة:status}).eq('id',id);
+  let elem=document.getElementById("app-"+id) || document.getElementById("record-"+id);
+  if(elem) elem.style.display="none";
+}
+
+// عرض المقبولين والمرفوضين
+async function showRecords(){
+  document.getElementById("adminPanel").style.display="none";
+  let panel=document.getElementById("recordsPanel");
+  panel.style.display="block";
+  panel.innerHTML='<div class="backBtn" onclick="backToAdmin()">رجوع</div><h3>المقبولون والمرفوضون</h3>';
+  let { data: apps } = await supabase.from('طلبات').select('*').neq('الحالة','قيد المراجعة');
+  apps.forEach(app=>{
+    panel.innerHTML+=`<div class="application" id="record-${app.id}"><b>${app.الاسم}</b><br>العمر: ${app.العمر}<br>${app.سبب_التقديم}<br>${app.الخبرة}<br>${app.التعامل}<br>الحالة: ${app.الحالة}<br>
+    <button class="accept" onclick="updateStatus(${app.id},'مقبول')">قبول</button>
+    <button class="reject" onclick="updateStatus(${app.id},'مرفوض')">رفض</button></div>`;
+  });
+}
+
+function backToAdmin(){
+  document.getElementById("recordsPanel").style.display="none";
+  document.getElementById("adminPanel").style.display="block";
+}
+</script>
+</body>
+</html><button onclick="checkStatus()">تحقق من حالتي</button>
+<button onclick="adminLogin()">لوحة الإدارة</button>
+</div>
+
+<div id="status"></div>
+<div id="adminPanel" style="display:none;"></div>
+<div id="recordsPanel" style="display:none;"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+// إعداد Supabase
+const supabaseUrl = "https://ygfbxlasagrnhvrbapiq.supabase.co";
+const supabaseKey = "sb_publishable_aBt0lYzYB2-lHZQ8tOU4xg_4GcM-udx";
+const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+
+const discordLink = "https://discord.gg/kdy3fkbKX9";
+const adminPass = "RUN";
+
+// إرسال الطلب
+async function submitApp(){
+  let name = document.getElementById("name").value.trim();
+  let age = document.getElementById("age").value.trim();
+  let reason = document.getElementById("reason").value.trim();
+  let experience = document.getElementById("experience").value.trim();
+  let handling = document.getElementById("handling").value.trim();
+  if(!name||!age||!reason||!experience||!handling){alert("اكمل كل البيانات");return;}
+  
+  // تحقق من التكرار
+  let { data: existing } = await supabase
+    .from('طلبات')
+    .select('id')
+    .eq('الاسم', name)
+    .single();
+  if(existing){alert("انت قدمت من قبل"); return;}
+  
+  // أرسل الطلب
+  await supabase.from('طلبات').insert([{
+    الاسم: name,
+    العمر: age,
+    سبب_التقديم: reason,
+    الخبرة: experience,
+    التعامل: handling,
+    الحالة: "قيد المراجعة"
+  }]);
+  
+  alert("تم إرسال طلبك");
+}
+
+// التحقق من حالة الطلب
+async function checkStatus(){
+  let name = document.getElementById("name").value.trim();
+  if(!name){alert("اكتب اسمك");return;}
+  let { data: app } = await supabase
+    .from('طلبات')
+    .select('*')
+    .eq('الاسم', name)
+    .single();
+  let statusDiv = document.getElementById("status");
+  if(!app){statusDiv.innerHTML="لا يوجد طلب بهذا الاسم"; return;}
+  if(app.الحالة==="مقبول"){
+    statusDiv.innerHTML=`<div class="success">🎉 تم قبولك!<br>اضغط للدخول:<br><a href="${discordLink}" target="_blank" style="color:#00ff99;">دخول السيرفر</a></div>`;
+  }else if(app.الحالة==="مرفوض"){
+    statusDiv.innerHTML="❌ تم رفض طلبك";
+  }else{
+    statusDiv.innerHTML=`<div class="pending">⏳ طلبك قيد المراجعة</div>`;
+  }
+}
+
+// تسجيل دخول الإدارة
+async function adminLogin(){
+  let pass = prompt("ادخل كلمة سر الإدارة");
+  if(pass!==adminPass){alert("كلمة السر غلط");return;}
+  document.getElementById("applySection").style.display="none";
+  document.getElementById("adminPanel").style.display="block";
+  loadApps();
+}
+
+// تحميل الطلبات للوحة الإدارة
+async function loadApps(){
+  let panel=document.getElementById("adminPanel");
+  panel.innerHTML="<h3>لوحة الإدارة</h3>";
+  panel.innerHTML+='<button class="topButton" onclick="showRecords()">المقبولون/المرفوضون</button>';
+  let { data: apps } = await supabase.from('طلبات').select('*').eq('الحالة','قيد المراجعة');
+  apps.forEach(app=>{
+    panel.innerHTML+=`<div class="application" id="app-${app.id}"><b>${app.الاسم}</b><br>العمر: ${app.العمر}<br>${app.سبب_التقديم}<br>${app.الخبرة}<br>${app.التعامل}<br>
+    <button class="accept" onclick="updateStatus(${app.id},'مقبول')">قبول</button>
+    <button class="reject" onclick="updateStatus(${app.id},'مرفوض')">رفض</button></div>`;
+  });
+}
+
+// تحديث حالة الطلب
+async function updateStatus(id,status){
+  await supabase.from('طلبات').update({الحالة:status}).eq('id',id);
   document.getElementById("app-"+id).style.display="none";
 }
 
